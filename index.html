@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gann Square of 9</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --res: #10b981;
+            --sup: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header img {
+            width: 60px;
+            margin-bottom: 10px;
+        }
+
+        h2 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button:active { opacity: 0.8; }
+
+        .results {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .col-title {
+            grid-column: span 1;
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .res-title { color: var(--res); }
+        .sup-title { color: var(--sup); }
+
+        .level-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        .deg { color: #64748b; font-weight: bold; }
+        .val { font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <img src="https://cdn-icons-png.flaticon.com/512/2344/2344132.png" alt="Logo">
+        <h2>Gann Square of 9</h2>
+    </header>
+
+    <div class="input-group">
+        <label>Current Price (LTP/Open):</label>
+        <input type="number" id="priceInput" placeholder="Eg: 18500" step="any">
+    </div>
+
+    <button onclick="calculate()">Calculate Levels</button>
+
+    <div id="output" style="display: none;">
+        <div class="results">
+            <div class="col-title res-title">RESISTANCE ↑</div>
+            <div class="col-title sup-title">SUPPORT ↓</div>
+            
+            <div id="resList"></div>
+            <div id="supList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        const price = parseFloat(document.getElementById('priceInput').value);
+        if (!price || price <= 0) {
+            alert("Please number greater than zero.");
+            return;
+        }
+
+        const root = Math.sqrt(price);
+        const factors = {
+            "45°": 0.25, "90°": 0.50, "135°": 0.75, "180°": 1.00,
+            "225°": 1.25, "270°": 1.50, "315°": 1.75, "360°": 2.00
+        };
+
+        let resHTML = "";
+        let supHTML = "";
+
+        for (const [degree, factor] of Object.entries(factors)) {
+            // Resistance
+            const res = Math.pow(root + factor, 2).toFixed(2);
+            resHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">${res}</span></div>`;
+
+            // Support
+            if (root - factor > 0) {
+                const sup = Math.pow(root - factor, 2).toFixed(2);
+                supHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">${sup}</span></div>`;
+            } else {
+                supHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">N/A</span></div>`;
+            }
+        }
+
+        document.getElementById('resList').innerHTML = resHTML;
+        document.getElementById('supList').innerHTML = supHTML;
+        document.getElementById('output').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
