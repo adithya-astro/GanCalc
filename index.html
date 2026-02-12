@@ -2,9 +2,16 @@
 <html lang="ml">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gann Square of 9</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
+
     <style>
         :root {
             --primary: #2563eb;
@@ -23,6 +30,7 @@
             justify-content: center;
             padding: 20px;
             margin: 0;
+            min-height: 100vh;
         }
 
         .container {
@@ -31,7 +39,8 @@
             background: var(--card);
             padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            align-self: flex-start;
         }
 
         header {
@@ -41,6 +50,7 @@
 
         header img {
             width: 60px;
+            height: 60px;
             margin-bottom: 10px;
         }
 
@@ -59,45 +69,54 @@
 
         input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: 2px solid #e2e8f0;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             box-sizing: border-box;
             outline: none;
             transition: border-color 0.3s;
+            -webkit-appearance: none;
         }
 
         input:focus { border-color: var(--primary); }
 
         button {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.3s;
+            transition: transform 0.1s, opacity 0.2s;
         }
 
-        button:active { opacity: 0.8; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
 
         .results {
             margin-top: 25px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .col-title {
             grid-column: span 1;
             font-weight: bold;
             text-align: center;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f5f9;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
         }
 
         .res-title { color: var(--res); }
@@ -106,13 +125,20 @@
         .level-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.9rem;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+            font-size: 0.95rem;
         }
 
-        .deg { color: #64748b; font-weight: bold; }
-        .val { font-weight: 600; }
+        .deg { color: #94a3b8; font-weight: bold; font-size: 0.8rem; }
+        .val { font-weight: 600; font-family: monospace; }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -125,7 +151,7 @@
 
     <div class="input-group">
         <label>Current Price (LTP/Open):</label>
-        <input type="number" id="priceInput" placeholder="Eg: 18500" step="any">
+        <input type="number" id="priceInput" placeholder="Enter stock price..." step="any" inputmode="decimal">
     </div>
 
     <button onclick="calculate()">Calculate Levels</button>
@@ -139,15 +165,34 @@
             <div id="supList"></div>
         </div>
     </div>
+
+    <footer>
+        Gann Calculator • PWA Ready
+    </footer>
 </div>
 
 <script>
+    // 1. PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW Registered'))
+                .catch(err => console.error('SW Registration failed', err));
+        });
+    }
+
+    // 2. Gann Logic
     function calculate() {
-        const price = parseFloat(document.getElementById('priceInput').value);
+        const priceInput = document.getElementById('priceInput');
+        const price = parseFloat(priceInput.value);
+        
         if (!price || price <= 0) {
-            alert("Please number greater than zero.");
+            alert("Please enter a valid price greater than zero.");
             return;
         }
+
+        // Hide keyboard on mobile after clicking
+        priceInput.blur();
 
         const root = Math.sqrt(price);
         const factors = {
@@ -159,23 +204,45 @@
         let supHTML = "";
 
         for (const [degree, factor] of Object.entries(factors)) {
-            // Resistance
+            // Resistance Calculation
             const res = Math.pow(root + factor, 2).toFixed(2);
-            resHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">${res}</span></div>`;
+            resHTML += `
+                <div class="level-row">
+                    <span class="deg">${degree}</span>
+                    <span class="val">${res}</span>
+                </div>`;
 
-            // Support
+            // Support Calculation
             if (root - factor > 0) {
                 const sup = Math.pow(root - factor, 2).toFixed(2);
-                supHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">${sup}</span></div>`;
+                supHTML += `
+                    <div class="level-row">
+                        <span class="deg">${degree}</span>
+                        <span class="val">${sup}</span>
+                    </div>`;
             } else {
-                supHTML += `<div class="level-row"><span class="deg">${degree}</span><span class="val">N/A</span></div>`;
+                supHTML += `
+                    <div class="level-row">
+                        <span class="deg">${degree}</span>
+                        <span class="val" style="color:#cbd5e1">N/A</span>
+                    </div>`;
             }
         }
 
         document.getElementById('resList').innerHTML = resHTML;
         document.getElementById('supList').innerHTML = supHTML;
         document.getElementById('output').style.display = 'block';
+        
+        // Scroll to results on small screens
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
+
+    // Allow "Enter" key to trigger calculation
+    document.getElementById('priceInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            calculate();
+        }
+    });
 </script>
 
 </body>
